@@ -1,425 +1,441 @@
 'use strict';
 
 var googletag     = googletag || {};
-    googletag.cmd = googletag.cmd || [];
+googletag.cmd = googletag.cmd || [];
 
-angular.module('ngDfp', [])
-  .constant('ngDfpUrl', '//www.googletagservices.com/tag/js/gpt.js')
 
-  .provider('DoubleClick', ['ngDfpUrl', function (ngDfpUrl) {
-    /**
-     Holds slot configurations.
-     */
-    var slots = {};
+var categoryExclusions = {};
 
-    /**
-     Defined Slots, so we can refresh the ads
-     */
-    var definedSlots = {};
+angular.module('morrr-ngDfp', [])
+   .constant('ngDfpUrl', '//www.googletagservices.com/tag/js/gpt.js')
 
-    /**
-     Holds size mapping configuration
-     */
-    var sizeMapping = {};
+   .provider('DoubleClick', ['ngDfpUrl', function (ngDfpUrl) {
+     /**
+      Holds slot configurations.
+      */
+     var slots = {};
 
-    /** 
-     If configured, all ads will be refreshed at the same interval
-     */
-    var refreshInterval = null;
+     /**
+      Defined Slots, so we can refresh the ads
+      */
+     var definedSlots = {};
 
-    /**
-     If false the google ads library won't be loaded and no promises will be fulfilled.
-     */
-    var enabled = true;
+     /**
+      Holds size mapping configuration
+      */
+     var sizeMapping = {};
 
-    /**
-     Defined Page targeting key->values
-     */
-    var pageTargeting = {};
+     /**
+      If configured, all ads will be refreshed at the same interval
+      */
+     var refreshInterval = null;
 
-    /**
-     Collapse empty divs if true
-     */
-    var collapseEmptyDivs = false;
+     /**
+      If false the google ads library won't be loaded and no promises will be fulfilled.
+      */
+     var enabled = true;
 
-    /**
-     This initializes the dfp script in the document. Loosely based on angular-re-captcha's
-     method of loading the script with promises.
+     /**
+      Defined Page targeting key->values
+      */
+     var pageTargeting = {};
 
-     @link https://github.com/mllrsohn/angular-re-captcha/blob/master/angular-re-captcha.js
-     */
-    this._createTag = function (callback) {
-      if ( ! enabled) {
-        return;
-      }
+     /**
+      Collapse empty divs if true
+      */
+     var collapseEmptyDivs = false;
 
-      var gads   = document.createElement('script'),
+     /**
+      This initializes the dfp script in the document. Loosely based on angular-re-captcha's
+      method of loading the script with promises.
+
+      @link https://github.com/mllrsohn/angular-re-captcha/blob/master/angular-re-captcha.js
+      */
+     this._createTag = function (callback) {
+       if ( ! enabled) {
+         return;
+       }
+
+       var gads   = document.createElement('script'),
           useSSL = 'https:' === document.location.protocol,
           node   = document.getElementsByTagName('script')[0];
 
-      gads.async = true;
-      gads.type  = 'text/javascript';
-      gads.src   = (useSSL ? 'https:' : 'http:') + ngDfpUrl;
-      
-      // Insert before any JS include.
-      node.parentNode.insertBefore(gads, node);
+       gads.async = true;
+       gads.type  = 'text/javascript';
+       gads.src   = (useSSL ? 'https:' : 'http:') + ngDfpUrl;
 
-      gads.onreadystatechange = function() {
-        if (this.readyState == 'complete') {
-          callback();
-        }
-      };
+       // Insert before any JS include.
+       node.parentNode.insertBefore(gads, node);
 
-      gads.onload = callback;
-    };
+       gads.onreadystatechange = function() {
+         if (this.readyState == 'complete') {
+           callback();
+         }
+       };
 
-    /**
-     Initializes and configures the slots that were added with defineSlot.
-     */
-    this._initialize = function () {
-      var self = this;
-      // when the GPT JavaScript is loaded, it looks through the array and executes all the functions in order
-      googletag.cmd.push(function() {
-        angular.forEach(slots, function (slot, id) {
-          definedSlots[id] = googletag.defineSlot.apply(null, slot).addService(googletag.pubads());
-          if(sizeMapping[id]){
-            definedSlots[id].defineSizeMapping(sizeMapping[id]);
-          }
+       gads.onload = callback;
+     };
 
-          /**
-           If sent, set the slot specific targeting
-           */
-	  var slotTargeting = slot.getSlotTargeting();
-          if(slotTargeting){
-            angular.forEach(slotTargeting, function (value, key) {
-              definedSlots[id].setTargeting(value.id, value.value);
-            });
-          }
-        });
+     /**
+      Initializes and configures the slots that were added with defineSlot.
+      */
+     this._initialize = function () {
+       var self = this;
+       // when the GPT JavaScript is loaded, it looks through the array and executes all the functions in order
+       googletag.cmd.push(function() {
+         angular.forEach(slots, function (slot, id) {
+           definedSlots[id] = googletag.defineSlot.apply(null, slot).addService(googletag.pubads());
 
-	      /**
-         Set the page targeting key->values
-         */
-        angular.forEach(pageTargeting, function (value, key) {
-          googletag.pubads().setTargeting(key, value);
-        });
+           if(sizeMapping[id]){
+             definedSlots[id].defineSizeMapping(sizeMapping[id]);
+           }
 
-        /**
-         If requested set to true the collapseEmptyDivs
-         */
-        if (collapseEmptyDivs) {
-          googletag.pubads().collapseEmptyDivs();
-        }
+           /**
+            If sent, set the slot specific targeting
+            */
+           var slotTargeting = slot.getSlotTargeting();
+           if(slotTargeting){
+             angular.forEach(slotTargeting, function (value, key) {
+               definedSlots[id].setTargeting(value.id, value.value);
+             });
+           }
 
-        googletag.pubads().enableSingleRequest();
-        googletag.enableServices();
+           if (categoryExclusions[id]) {
+             angular.forEach(categoryExclusions[id], function (exclusion) {
+               definedSlots[id].setCategoryExclusion(exclusion);
+             });
+           }
+         });
 
-        googletag.pubads().addEventListener('slotRenderEnded', self._slotRenderEnded);
-      });
-    };
+         /**
+          Set the page targeting key->values
+          */
+         angular.forEach(pageTargeting, function (value, key) {
+           googletag.pubads().setTargeting(key, value);
+         });
 
-    this._slotRenderEnded = function (event) {
-      var callback = slots[event.slot.getSlotId().getDomId()].renderCallback;
-      
-      if (typeof callback === 'function') {
-        callback();
-      }
-    };
+         /**
+          If requested set to true the collapseEmptyDivs
+          */
+         if (collapseEmptyDivs) {
+           googletag.pubads().collapseEmptyDivs();
+         }
 
-    /**
-     Returns the global refresh interval
-     */
-    this._refreshInterval = function () {
-      return refreshInterval;
-    };
+         googletag.pubads().enableSingleRequest();
+         googletag.enableServices();
 
-    /**
-     Allows defining the global refresh interval
-     */
-    this.setRefreshInterval = function (interval) {
-      refreshInterval = interval;
+         googletag.pubads().addEventListener('slotRenderEnded', self._slotRenderEnded);
+       });
+     };
 
-      // Chaining
-      return this;
-    };
+     this._slotRenderEnded = function (event) {
+       var callback = slots[event.slot.getSlotId().getDomId()].renderCallback;
 
-    /**
-     Stores a slot definition.
-     */
-    this.defineSlot = function () {
-      var slot = arguments;
+       if (typeof callback === 'function') {
+         callback();
+       }
+     };
 
-      slot.getSize = function () {
-        return this[1];
-      };
+     /**
+      Returns the global refresh interval
+      */
+     this._refreshInterval = function () {
+       return refreshInterval;
+     };
 
-      /**
-       To be able to get the array of slot targeting key/value
-       Example of the json format of the arguments: [{"id":"age","value":"20-30"}]
-       For multiple targeting key,values example: [{"id":"age","value":"20-30"},{"id":"gender","value":"male"}]
-       */
-      slot.getSlotTargeting = function() {
-        /**
-         The third parameter is optional
-         */
-        if (this[3]) {
-          return this[3];
-        } else {
-          return false;
-        }
-      };
+     /**
+      Allows defining the global refresh interval
+      */
+     this.setRefreshInterval = function (interval) {
+       refreshInterval = interval;
 
-      slot.setRenderCallback = function (callback) {
-        this.renderCallback = callback;
-      };
+       // Chaining
+       return this;
+     };
 
-      slots[arguments[2]] = slot;
+     /**
+      Stores a slot definition.
+      */
+     this.defineSlot = function () {
+       var slot = arguments;
 
-      // Chaining.
-      return this;
-    };
+       slot.getSize = function () {
+         return this[1];
+       };
 
-    /**
-     Stores a slot size mapping.
-     */
-    this.defineSizeMapping = function (){
-      var id = arguments[0];
+       /**
+        To be able to get the array of slot targeting key/value
+        Example of the json format of the arguments: [{"id":"age","value":"20-30"}]
+        For multiple targeting key,values example: [{"id":"age","value":"20-30"},{"id":"gender","value":"male"}]
+        */
+       slot.getSlotTargeting = function() {
+         /**
+          The third parameter is optional
+          */
+         if (this[3]) {
+           return this[3];
+         } else {
+           return false;
+         }
+       };
 
-      if(!sizeMapping[id]){
-        sizeMapping[id] = [];
-      }
-      
-      // Add a new size mapping ( [browser size], [slot size])
-      this.addSize = function() {
-        sizeMapping[id].push([arguments[0], arguments[1]]);
-        return this;
-      }
+       slot.setRenderCallback = function (callback) {
+         this.renderCallback = callback;
+       };
 
-      // Chaining.
-      return this;
-    };
+       slots[arguments[2]] = slot;
 
-    /**
-     Enables/Disables the entire library. Basically doesn't load the google ads library.
-     Useful to disable ads entirely given a certain condition is met.
-     */
-    this.setEnabled = function (setting) {
-      enabled = setting;
-    };
+       // Chaining.
+       return this;
+     };
 
-    /**
-     Stores page targeting key->values
-     */
-    this.setPageTargeting = function (key, value) {
-      pageTargeting[key] = value;
-    };
 
-    /**
-     Set to true the collapseEmptyDivs
-     */
-    this.collapseEmptyDivs = function () {
-      collapseEmptyDivs = true;
-    };
+     /**
+      Stores a slot size mapping.
+      */
+     this.defineSizeMapping = function (){
+       var id = arguments[0];
 
-    // Public factory API.
-    var self  = this;
-    this.$get = ['$q', '$window', '$interval', function ($q, $window, $interval) {
-      // Neat trick from github.com/mllrsohn/angular-re-captcha
-      var deferred = $q.defer();
+       if(!sizeMapping[id]){
+         sizeMapping[id] = [];
+       }
 
-      self._createTag(function () {
-        self._initialize();
+       // Add a new size mapping ( [browser size], [slot size])
+       this.addSize = function() {
+         sizeMapping[id].push([arguments[0], arguments[1]]);
+         return this;
+       };
 
-        if (self._refreshInterval() !== null) {
-          $interval(function () {
-            googletag.cmd.push(function() {
-              $window.googletag.pubads().refresh();
-            });
-          }, self._refreshInterval());
-        }
+       // Chaining.
+       return this;
+     };
 
-        deferred.resolve();
-      });
-      
-      return {
-        /**
-         More than just getting the ad size, this 
-         allows us to wait for the JS file to finish downloading and 
-         configuring ads
+     /**
+      Enables/Disables the entire library. Basically doesn't load the google ads library.
+      Useful to disable ads entirely given a certain condition is met.
+      */
+     this.setEnabled = function (setting) {
+       enabled = setting;
+     };
 
-         @deprecated Use getSlot().getSize() instead.
-         */
-        getAdSize: function (id) {
-          return deferred.promise.then(function () {
-            // Return the size of the ad. The directive should construct
-            // the tag by itself.
-            var slot = slots[id];
+     /**
+      Stores page targeting key->values
+      */
+     this.setPageTargeting = function (key, value) {
+       pageTargeting[key] = value;
+     };
 
-            if (angular.isUndefined(slot)) {
-              throw 'Slot ' + id + ' has not been defined. Define it using DoubleClickProvider.defineSlot().';
-            }
+     /**
+      Set to true the collapseEmptyDivs
+      */
+     this.collapseEmptyDivs = function () {
+       collapseEmptyDivs = true;
+     };
 
-            return slots[id][1];
-          });
-        },
+     // Public factory API.
+     var self  = this;
+     this.$get = ['$q', '$window', '$interval', function ($q, $window, $interval) {
+       // Neat trick from github.com/mllrsohn/angular-re-captcha
+       var deferred = $q.defer();
 
-        getSlot: function (id) {
-          return deferred.promise.then(function () {
-            // Return the size of the ad. The directive should construct
-            // the tag by itself.
-            var slot = slots[id];
+       self._createTag(function () {
+         self._initialize();
 
-            if (angular.isUndefined(slot)) {
-              throw 'Slot ' + id + ' has not been defined. Define it using DoubleClickProvider.defineSlot().';
-            }
+         if (self._refreshInterval() !== null) {
+           $interval(function () {
+             googletag.cmd.push(function() {
+               $window.googletag.pubads().refresh();
+             });
+           }, self._refreshInterval());
+         }
 
-            return slots[id];
-          });
-        },
+         deferred.resolve();
+       });
 
-        runAd: function (id) {
-          googletag.cmd.push(function() {
-            $window.googletag.display(id);
-          });
-        },
+       return {
+         /**
+          More than just getting the ad size, this
+          allows us to wait for the JS file to finish downloading and
+          configuring ads
 
-        /**
-         Refreshes an ad by its id or ids.
+          @deprecated Use getSlot().getSize() instead.
+          */
+         getAdSize: function (id) {
+           return deferred.promise.then(function () {
+             // Return the size of the ad. The directive should construct
+             // the tag by itself.
+             var slot = slots[id];
 
-         Example:
+             if (angular.isUndefined(slot)) {
+               throw 'Slot ' + id + ' has not been defined. Define it using DoubleClickProvider.defineSlot().';
+             }
 
-             refreshAds('div-123123123-2')
-             refreshAds('div-123123123-2', 'div-123123123-3')
-         */
-        refreshAds: function () {
-          var slots = [];
+             return slots[id][1];
+           });
+         },
 
-          angular.forEach(arguments, function (id) {
-            slots.push(definedSlots[id]);
-          });
+         getSlot: function (id) {
+           return deferred.promise.then(function () {
+             // Return the size of the ad. The directive should construct
+             // the tag by itself.
+             var slot = slots[id];
 
-          googletag.cmd.push(function() {
-            $window.googletag.pubads().refresh(slots);
-          });
-        }
-      };
-    }];
-  }])
+             if (angular.isUndefined(slot)) {
+               throw 'Slot ' + id + ' has not been defined. Define it using DoubleClickProvider.defineSlot().';
+             }
 
-  .directive('ngDfpAdContainer', function () {
-    return {
-      restrict: 'A',
-      controller: ['$element', function ($element) {
-        function hide(mode) {
-          if (mode === 'visibility') {
-            $element.css('visibility', 'hidden');
-          }
-          else {
-            $element.hide();
-          }
-        }
+             return slots[id];
+           });
+         },
 
-        function show(mode) {
-          if (mode === 'visibility') {
-            $element.css('visibility', 'visible');
-          }
-          else {
-            $element.show();
-          }
-        }
+         runAd: function (id) {
+           googletag.cmd.push(function() {
+             $window.googletag.display(id);
+           });
+         },
 
-        this.$$setVisible = function (visible, mode) {
-          if (visible) {
-            show(mode);
-          }
-          else {
-            hide(mode);
-          }
-        };
-      }]
-    };
-  })
+         /**
+          Refreshes an ad by its id or ids.
 
-  .directive('ngDfpAd', ['$timeout', '$parse', '$interval', 'DoubleClick', function ($timeout, $parse, $interval, DoubleClick) {
-    return {
-      restrict: 'A',
-      template: '<div id="{{adId}}"></div>',
-      require: '?^ngDfpAdContainer',
-      scope: {
-        adId: '@ngDfpAd',
-        refresh: '@ngDfpAdRefresh',
-        interval: '@ngDfpAdRefreshInterval',
-        timeout: '@ngDfpAdRefreshTimeout'
-      },
-      replace: true,
-      link: function (scope, element, attrs, ngDfpAdContainer) {
-        scope.$watch('adId', function (id) {
-          // Get rid of the previous ad.
-          element.html('');
+          Example:
 
-          var intervalPromise = null;
+          refreshAds('div-123123123-2')
+          refreshAds('div-123123123-2', 'div-123123123-3')
+          */
+         refreshAds: function () {
+           var slots = [];
 
-          DoubleClick.getSlot(id).then(function (slot) {
-            var size = slot.getSize();
+           angular.forEach(arguments, function (id) {
+             slots.push(definedSlots[id]);
+           });
 
-            element.css('width', size[0]).css('height', size[1]);
-            $timeout(function () {
-              DoubleClick.runAd(id);
-            });
+           googletag.cmd.push(function() {
+             $window.googletag.pubads().refresh(slots);
+           });
+         }
+       };
+     }];
+   }])
 
-            // Only if we have a container we hide this thing
-            if (ngDfpAdContainer) {
-              slot.setRenderCallback(function () {
-                if (angular.isDefined(attrs.ngDfpAdHideWhenEmpty)) {
-                  if (element.find('iframe:not([id*=hidden])')
-                             .map(function () { return this.contentWindow.document; })
-                             .find("body")
-                             .children().length === 0) {
-                    // Hide it
-                    ngDfpAdContainer.$$setVisible(false, attrs.ngDfpAdHideWhenEmpty);
-                  }
-                  else {
-                    ngDfpAdContainer.$$setVisible(true, attrs.ngDfpAdHideWhenEmpty);
-                  }
-                }
-              });
-            }
+   .directive('ngDfpAdContainer', function () {
+     return {
+       restrict: 'A',
+       controller: ['$element', function ($element) {
+         function hide(mode) {
+           if (mode === 'visibility') {
+             $element.css('visibility', 'hidden');
+           }
+           else {
+             $element.hide();
+           }
+         }
 
-            // Forces Refresh
-            scope.$watch('refresh', function (refresh) {
-              if (angular.isUndefined(refresh)) {
-                return;
-              }
-              DoubleClick.refreshAds(id);
-            });
+         function show(mode) {
+           if (mode === 'visibility') {
+             $element.css('visibility', 'visible');
+           }
+           else {
+             $element.show();
+           }
+         }
 
-            // Refresh intervals
-            scope.$watch('interval', function (interval) {
-              if (angular.isUndefined(interval)) {
-                return;
-              }
+         this.$$setVisible = function (visible, mode) {
+           if (visible) {
+             show(mode);
+           }
+           else {
+             hide(mode);
+           }
+         };
+       }]
+     };
+   })
 
-              // Cancel previous interval
-              $interval.cancel(intervalPromise);
+   .directive('ngDfpAd', ['$timeout', '$parse', '$interval', 'DoubleClick', function ($timeout, $parse, $interval, DoubleClick) {
+     return {
+       restrict: 'A',
+       template: '<div id="{{adId}}"></div>',
+       require: '?^ngDfpAdContainer',
+       scope: {
+         adId: '@ngDfpAd',
+         refresh: '@ngDfpAdRefresh',
+         interval: '@ngDfpAdRefreshInterval',
+         timeout: '@ngDfpAdRefreshTimeout',
+         exclusions: '=ngDfpCategoryExclusions'
+       },
+       replace: true,
+       link: function (scope, element, attrs, ngDfpAdContainer) {
+         scope.$watch('adId', function (id) {
+           // Get rid of the previous ad.
+           element.html('');
 
-              intervalPromise = $interval(function () {
-                DoubleClick.refreshAds(id);
-              }, scope.interval);
-            });
+           var intervalPromise = null;
 
-            // Refresh after timeout
-            scope.$watch('timeout', function (timeout) {
-              if (angular.isUndefined(timeout)) {
-                return;
-              }
+           DoubleClick.getSlot(id).then(function (slot) {
+             var size = slot.getSize();
 
-              $timeout(function () {
-                DoubleClick.refreshAds(id);
-              }, scope.timeout);
-            });
-          });
-        });
-      }
-    };
-  }]);
- 
+             if (scope.exclusions && scope.exclusions.length > 0) {
+               categoryExclusions[id] = scope.exclusions;
+             }
+
+             element.css('width', size[0]).css('height', size[1]);
+             $timeout(function () {
+               DoubleClick.runAd(id);
+             });
+
+             // Only if we have a container we hide this thing
+             if (ngDfpAdContainer) {
+               slot.setRenderCallback(function () {
+                 if (angular.isDefined(attrs.ngDfpAdHideWhenEmpty)) {
+                   if (element.find('iframe:not([id*=hidden])')
+                         .map(function () { return this.contentWindow.document; })
+                         .find("body")
+                         .children().length === 0) {
+                     // Hide it
+                     ngDfpAdContainer.$$setVisible(false, attrs.ngDfpAdHideWhenEmpty);
+                   }
+                   else {
+                     ngDfpAdContainer.$$setVisible(true, attrs.ngDfpAdHideWhenEmpty);
+                   }
+                 }
+               });
+             }
+
+             // Forces Refresh
+             scope.$watch('refresh', function (refresh) {
+               if (angular.isUndefined(refresh)) {
+                 return;
+               }
+               DoubleClick.refreshAds(id);
+             });
+
+             // Refresh intervals
+             scope.$watch('interval', function (interval) {
+               if (angular.isUndefined(interval)) {
+                 return;
+               }
+
+               // Cancel previous interval
+               $interval.cancel(intervalPromise);
+
+               intervalPromise = $interval(function () {
+                 DoubleClick.refreshAds(id);
+               }, scope.interval);
+             });
+
+             // Refresh after timeout
+             scope.$watch('timeout', function (timeout) {
+               if (angular.isUndefined(timeout)) {
+                 return;
+               }
+
+               $timeout(function () {
+                 DoubleClick.refreshAds(id);
+               }, scope.timeout);
+             });
+           });
+         });
+       }
+     };
+   }]);
+

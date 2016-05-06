@@ -59,7 +59,7 @@ Optionally, you can refresh an ad individually immediately or after a defined ti
 <div ng-dfp-ad="div-gpt-ad-1234567890123-0" ng-dfp-ad-refresh-timeout="{{refreshTimeout}}"></div>
 ```
 
-Hiding Emtpy Ads
+Hiding Empty Ads
 ----------------
 
 Ads can be hidden by adding the attribute `data-ng-dfp-ad-hide-when-empty` to the ad tag. You have to 
@@ -88,6 +88,14 @@ DoubleClickProvider
     .addSize([640, 480], [728, 90])
     // Fits browsers of any size smaller than 640 x 480
     .addSize([0, 0], [88, 31]);
+```
+
+Category Exclusions
+-------------------
+You can set some labels to exclude articles configured with those in DFP with 'ng-dfp-category-exclusions'.
+
+```
+<div data-ng-dfp-ad="test-ad" ng-dfp-category-exclusions="array_of_labels_here"></div>
 ```
 
 Minimizing

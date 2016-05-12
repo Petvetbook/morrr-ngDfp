@@ -30,6 +30,11 @@ angular.module('morrr-ngDfp', [])
       */
      var refreshInterval = null;
 
+      /**
+       * If true, enables single request
+       */
+     var singleRequest = true;
+
      /**
       If false the google ads library won't be loaded and no promises will be fulfilled.
       */
@@ -121,7 +126,10 @@ angular.module('morrr-ngDfp', [])
            googletag.pubads().collapseEmptyDivs();
          }
 
-         googletag.pubads().enableSingleRequest();
+         if (singleRequest) {
+            googletag.pubads().enableSingleRequest();
+         }
+
          googletag.enableServices();
 
          googletag.pubads().addEventListener('slotRenderEnded', self._slotRenderEnded);
@@ -209,6 +217,14 @@ angular.module('morrr-ngDfp', [])
        // Chaining.
        return this;
      };
+
+
+      /**
+       * Set single request
+       */
+      this.setSingleRequest = function (setting) {
+         singleRequest = setting;
+      };
 
      /**
       Enables/Disables the entire library. Basically doesn't load the google ads library.
@@ -438,4 +454,3 @@ angular.module('morrr-ngDfp', [])
        }
      };
    }]);
-

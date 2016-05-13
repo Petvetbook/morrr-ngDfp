@@ -306,7 +306,9 @@ angular.module('morrr-ngDfp', [])
 
             runAd: function (id) {
                googletag.cmd.push(function() {
+                  console.log("display: ", id , " - ",  definedSlots[id].displaying);
                   if (!definedSlots[id].displaying) {
+                     console.log("displaying: ", id);
                      $window.googletag.display(id);
                      definedSlots[id].displaying = true;
                   }
@@ -325,7 +327,9 @@ angular.module('morrr-ngDfp', [])
                var slots = [];
 
                angular.forEach(arguments, function (id) {
+                  console.log("refresh: " , id, " - ", definedSlots[id].displaying);
                   if (definedSlots && definedSlots[id] && definedSlots[id].displaying) {
+                     console.log("refresh: ", id);
                      slots.push(definedSlots[id]);
                   }
                });

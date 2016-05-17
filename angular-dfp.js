@@ -301,8 +301,21 @@ angular.module('morrr-ngDfp', [])
             runAd: function (id) {
                googletag.cmd.push(function() {
                   if (!definedSlots[id].displaying) {
-                     $window.googletag.display(id);
                      definedSlots[id].displaying = true;
+
+                     if (Array.isArray(categoryExclusions[id])) {
+                        if (categoryExclusions[id].length === 0) {
+                           if (definedSlots[id]) {
+                              definedSlots[id].clearCategoryExclusions();
+                           }
+                        } else {
+                           angular.forEach(categoryExclusions[id], function (exclusion) {
+                              definedSlots[id].setCategoryExclusion(exclusion);
+                           });
+                        }
+                     }
+
+                     $window.googletag.display(id);
                   }
                });
             },
@@ -321,23 +334,26 @@ angular.module('morrr-ngDfp', [])
                angular.forEach(arguments, function (id) {
                   if (definedSlots && definedSlots[id] && definedSlots[id].displaying) {
                      slots.push(definedSlots[id]);
-                  }
-                  if (Array.isArray(categoryExclusions[id])) {
-                     if (categoryExclusions[id].length === 0) {
-                        if (definedSlots[id]) {
-                           definedSlots[id].clearCategoryExclusions();
+
+                     if (Array.isArray(categoryExclusions[id])) {
+                        if (categoryExclusions[id].length === 0) {
+                           if (definedSlots[id]) {
+                              definedSlots[id].clearCategoryExclusions();
+                           }
+                        } else {
+                           angular.forEach(categoryExclusions[id], function (exclusion) {
+                              definedSlots[id].setCategoryExclusion(exclusion);
+                           });
                         }
-                     } else {
-                        angular.forEach(categoryExclusions[id], function (exclusion) {
-                           definedSlots[id].setCategoryExclusion(exclusion);
-                        });
                      }
                   }
                });
 
-               googletag.cmd.push(function() {
-                  $window.googletag.pubads().refresh(slots);
-               });
+               if (slots.length > 0) {
+                  googletag.cmd.push(function () {
+                     $window.googletag.pubads().refresh(slots);
+                  });
+               }
             }
          };
       }];

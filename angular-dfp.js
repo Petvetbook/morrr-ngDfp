@@ -104,12 +104,6 @@ angular.module('morrr-ngDfp', [])
                      definedSlots[id].setTargeting(value.id, value.value);
                   });
                }
-
-               if (categoryExclusions[id]) {
-                  angular.forEach(categoryExclusions[id], function (exclusion) {
-                     definedSlots[id].setCategoryExclusion(exclusion);
-                  });
-               }
             });
 
             /**
@@ -328,6 +322,17 @@ angular.module('morrr-ngDfp', [])
                   if (definedSlots && definedSlots[id] && definedSlots[id].displaying) {
                      slots.push(definedSlots[id]);
                   }
+                  if (Array.isArray(categoryExclusions[id])) {
+                     if (categoryExclusions[id].length === 0) {
+                        if (definedSlots[id]) {
+                           definedSlots[id].clearCategoryExclusions();
+                        }
+                     } else {
+                        angular.forEach(categoryExclusions[id], function (exclusion) {
+                           definedSlots[id].setCategoryExclusion(exclusion);
+                        });
+                     }
+                  }
                });
 
                googletag.cmd.push(function() {
@@ -397,6 +402,8 @@ angular.module('morrr-ngDfp', [])
 
                   if (scope.exclusions && scope.exclusions.length > 0) {
                      categoryExclusions[id] = scope.exclusions;
+                  } else {
+                     categoryExclusions[id] = [];
                   }
 
                   element.css('width', size[0]).css('height', size[1]);

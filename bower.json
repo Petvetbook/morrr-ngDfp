@@ -1,6 +1,6 @@
 {
   "name": "morrr-ngDfp",
-  "version": "0.14.5",
+  "version": "0.14.6",
   "main": "angular-dfp.js",
   "ignore": [
     "bower.json",
